@@ -77,6 +77,7 @@ def main():
             model_kwargs=model_kwargs,
             cond_fn=cond_fn,
             device=device,
+            progress=True,
             return_intermediate_samples=True
         )  # intermediate_samples: list of dict, "sample" and "unnoised_sample" are tensor images
         sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
