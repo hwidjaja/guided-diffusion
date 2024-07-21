@@ -436,7 +436,7 @@ class GaussianDiffusion:
                 cond_fn, out, x, t, model_kwargs=model_kwargs
             )
         sample = out["mean"] + nonzero_mask * th.exp(0.5 * out["log_variance"]) * noise
-        return {"sample": sample, "pred_xstart": out["pred_xstart"]}
+        return {"sample": sample, "pred_xstart": out["pred_xstart"], "unnoised_sample": out["mean"]}
 
     def p_sample_loop(
         self,
@@ -449,6 +449,7 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
+        return_intermediate_samples=False
     ):
         """
         Generate samples from the model.
@@ -470,6 +471,7 @@ class GaussianDiffusion:
         :return: a non-differentiable batch of samples.
         """
         final = None
+        intermediate_samples = []
         for sample in self.p_sample_loop_progressive(
             model,
             shape,
@@ -482,7 +484,13 @@ class GaussianDiffusion:
             progress=progress,
         ):
             final = sample
-        return final["sample"]
+            if return_intermediate_samples:
+                intermediate_samples.append(sample)
+
+        if return_intermediate_samples:
+            return final["sample"], intermediate_samples
+        else:
+            return final["sample"]
 
     def p_sample_loop_progressive(
         self,
@@ -582,7 +590,7 @@ class GaussianDiffusion:
             (t != 0).float().view(-1, *([1] * (len(x.shape) - 1)))
         )  # no noise when t == 0
         sample = mean_pred + nonzero_mask * sigma * noise
-        return {"sample": sample, "pred_xstart": out["pred_xstart"]}
+        return {"sample": sample, "pred_xstart": out["pred_xstart"],  "unnoised_sample": mean_pred}
 
     def ddim_reverse_sample(
         self,
@@ -634,6 +642,7 @@ class GaussianDiffusion:
         device=None,
         progress=False,
         eta=0.0,
+        return_intermediate_samples=False
     ):
         """
         Generate samples from the model using DDIM.
@@ -641,6 +650,7 @@ class GaussianDiffusion:
         Same usage as p_sample_loop().
         """
         final = None
+        intermediate_samples = []
         for sample in self.ddim_sample_loop_progressive(
             model,
             shape,
@@ -654,7 +664,13 @@ class GaussianDiffusion:
             eta=eta,
         ):
             final = sample
-        return final["sample"]
+            if return_intermediate_samples:
+                intermediate_samples.append(sample)
+
+        if return_intermediate_samples:
+            return final["sample"], intermediate_samples
+        else:
+            return final["sample"]
 
     def ddim_sample_loop_progressive(
         self,
