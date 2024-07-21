@@ -32,6 +32,7 @@ def main():
     )
     model.load_state_dict(th.load(args.model_path, map_location="cpu"))
     device = th.device("cuda" if th.cuda.is_available() else "cpu")
+    print('using device:', device)
     model.to(device)
     if args.use_fp16:
         model.convert_to_fp16()
